@@ -134,6 +134,13 @@ def process_ops(target_ops, input_shape):
 
 
 def main():
+    # TODO: add check that we are working with GPU TF channel ordering
+    # TODO: check if every graph op we analyze have only 1 input and output
+    # TODO: process activations layers
+    # TODO: add receptive field
+    # TODO: add flops
+    # TODO: add comparison of computed flops/params with number extracted directly from TF graph
+
     with tf.Session() as sess:
 
         batch_size = 1
