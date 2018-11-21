@@ -37,6 +37,10 @@ class LayerBase():
         # not implemented
         assert (False)
 
+    def compute_params(self):
+        # not implemented
+        assert (False)
+
     def get_type(self):
         # not implemented
         assert (False)
@@ -49,6 +53,9 @@ class LayerMaxPool(LayerBase):
         # not implemented
         assert(False)
 
+    def compute_params(self):
+        return 0
+
     def get_type(self):
         return "MaxPool"
 
@@ -60,6 +67,9 @@ class LayerConv(LayerBase):
     def computer_flops(self):
         # not implemented
         assert (False)
+
+    def compute_params(self):
+        return self.filter_h * self.filter_w * self.filter_d * self.prev_d
 
     def get_type(self):
         return "Conv2D"
@@ -115,7 +125,9 @@ def process_ops(target_ops, input_shape):
         if not check_shape_againt_groundtruth(op, prev_layer_shape):
             print("issues with dimension computation for operation {}".format(op.name))
 
-        print("{} {}".format(op.name, prev_layer_shape))
+        print("{:35} {:26} {:20}".format(op.name,
+                                         "shape[{}]".format(prev_layer_shape),
+                                         "params[{}]".format(layer.compute_params())))
 
         #print("{} {} {}x{}x{} stride[{}] padding[{}]"
         #      .format(op.name, op.type, kernel_size, kernel_size, kernel_depth, strides[1], op.get_attr('padding')))
