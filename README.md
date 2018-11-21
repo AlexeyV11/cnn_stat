@@ -1,11 +1,13 @@
 # cnn_stat
 Example of how to compute simple network statistic on top of tensorflow graph (computing using simple mathematics and not TF api/internal state).
 
+
 For each layer we compute the following:
 - params count 
 - flops
 - receptive field
 - shape
+
 
 Things to improve:
 - add check that we are working with the right batch ordering (GPU format)
