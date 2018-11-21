@@ -50,8 +50,8 @@ class LayerMaxPool(LayerBase):
         LayerBase.__init__(self, prev_h, prev_w, prev_d, filter_h, filter_w, filter_d, filter_stride, padding)
 
     def compute_flops(self):
-        # not implemented
-        assert(False)
+        # in case of max pooling we do only comparisons
+        return 0
 
     def compute_params(self):
         return 0
@@ -64,9 +64,13 @@ class LayerConv(LayerBase):
     def __init__(self, prev_h, prev_w, prev_d, filter_h, filter_w, filter_d, filter_stride, padding):
         LayerBase.__init__(self, prev_h, prev_w, prev_d, filter_h, filter_w, filter_d, filter_stride, padding)
 
-    def computer_flops(self):
-        # not implemented
-        assert (False)
+    def compute_flops(self):
+        h,w,d = self.compute_feature_shape()
+
+        mult_adds_per_kernel = self.filter_h * self.filter_w * self.prev_d  # we need to take a kernel and multiply/add to get just 1 output
+        # repeat for each possible output location
+        return mult_adds_per_kernel * self.filter_d * h * w
+
 
     def compute_params(self):
         return self.filter_h * self.filter_w * self.filter_d * self.prev_d
@@ -115,6 +119,8 @@ def process_ops(target_ops, input_shape):
 
     prev_layer_shape = input_shape
 
+    total = 0
+
     for op in target_ops:
 
 
@@ -125,21 +131,24 @@ def process_ops(target_ops, input_shape):
         if not check_shape_againt_groundtruth(op, prev_layer_shape):
             print("issues with dimension computation for operation {}".format(op.name))
 
-        print("{:35} {:26} {:20}".format(op.name,
-                                         "shape[{}]".format(prev_layer_shape),
-                                         "params[{}]".format(layer.compute_params())))
+        print("{:35} {:26} {:20} {:20}".format(op.name,
+                                            "shape[{}]".format(prev_layer_shape),
+                                            "params[{}]".format(layer.compute_params()),
+                                            "flops[{}]".format(layer.compute_flops())))
 
+        total += layer.compute_flops()
         #print("{} {} {}x{}x{} stride[{}] padding[{}]"
         #      .format(op.name, op.type, kernel_size, kernel_size, kernel_depth, strides[1], op.get_attr('padding')))
-
+    print("Total GFLOPs for CONV layers : {0:.2f} ".format(total / 1000000000))
 
 def main():
     # TODO: add check that we are working with GPU TF channel ordering
     # TODO: check if every graph op we analyze have only 1 input and output
-    # TODO: process activations layers
+    # TODO: process pool flops
+    # TODO: process activations layers altough they will have a minor effect
     # TODO: add receptive field
-    # TODO: add flops
     # TODO: add comparison of computed flops/params with number extracted directly from TF graph
+    # TODO: visualise the distribution of the params/computations over the network
 
     with tf.Session() as sess:
 
