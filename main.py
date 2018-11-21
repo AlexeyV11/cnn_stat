@@ -15,6 +15,15 @@ class LayerBase():
         self.filter_stride = filter_stride
         self.padding = padding
 
+    @property
+    def stride(self):
+        return self.filter_stride
+
+    @property
+    def kernel_spatial_size(self):
+        assert(self.filter_h == self.filter_w)
+        return self.filter_h
+
     def compute_feature_shape(self):
 
         # for pool the same rules
@@ -121,20 +130,27 @@ def process_ops(target_ops, input_shape):
 
     total = 0
 
+    receptive_field = 1
+    stride_k = 1
+
     for op in target_ops:
 
 
         layer = create_layer_obj(op, prev_layer_shape)
+
+        receptive_field += (layer.kernel_spatial_size - 1) * stride_k
+        stride_k *= layer.stride
 
         prev_layer_shape = layer.compute_feature_shape()
 
         if not check_shape_againt_groundtruth(op, prev_layer_shape):
             print("issues with dimension computation for operation {}".format(op.name))
 
-        print("{:35} {:26} {:20} {:20}".format(op.name,
+        print("{:35} {:26} {:20} {:20} {:20}".format(op.name,
                                             "shape[{}]".format(prev_layer_shape),
                                             "params[{}]".format(layer.compute_params()),
-                                            "flops[{}]".format(layer.compute_flops())))
+                                            "flops[{}]".format(layer.compute_flops()),
+                                            "receptive_f[{}]".format(receptive_field)))
 
         total += layer.compute_flops()
         #print("{} {} {}x{}x{} stride[{}] padding[{}]"
@@ -142,13 +158,13 @@ def process_ops(target_ops, input_shape):
     print("Total GFLOPs for CONV layers : {0:.2f} ".format(total / 1000000000))
 
 def main():
-    # TODO: add check that we are working with GPU TF channel ordering
-    # TODO: check if every graph op we analyze have only 1 input and output
+    # TODO: add check that we are working with the right batch ordering (GPU format)
+    # TODO: check if every graph op we analyze have only 1 input and output or impliment handling of more complex cases like resnet
     # TODO: process pool flops
     # TODO: process activations layers altough they will have a minor effect
-    # TODO: add receptive field
     # TODO: add comparison of computed flops/params with number extracted directly from TF graph
-    # TODO: visualise the distribution of the params/computations over the network
+    # TODO: visualise the distribution of the params/computations over the net
+
 
     with tf.Session() as sess:
 
