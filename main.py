@@ -77,12 +77,14 @@ class LayerConv(LayerBase):
         h,w,d = self.compute_feature_shape()
 
         mult_adds_per_kernel = self.filter_h * self.filter_w * self.prev_d  # we need to take a kernel and multiply/add to get just 1 output
+
         # repeat for each possible output location
         return mult_adds_per_kernel * self.filter_d * h * w
 
 
     def compute_params(self):
-        return self.filter_h * self.filter_w * self.filter_d * self.prev_d
+        # weight + bias
+        return self.filter_h * self.filter_w * self.filter_d * self.prev_d + self.filter_d
 
     def get_type(self):
         return "Conv2D"
@@ -120,21 +122,23 @@ def create_layer_obj(op, prev_layer_shape):
         # not implemented
         assert (False)
 
+
 def check_shape_againt_groundtruth(op, prev_layer_shape):
     gt = op.outputs[0].get_shape()
     return tuple([int(i) for i in gt[1:]]) == prev_layer_shape
+
 
 def process_ops(target_ops, input_shape):
 
     prev_layer_shape = input_shape
 
-    total = 0
+    total_flops = 0
+    total_params = 0
 
     receptive_field = 1
     stride_k = 1
 
     for op in target_ops:
-
 
         layer = create_layer_obj(op, prev_layer_shape)
 
@@ -152,10 +156,13 @@ def process_ops(target_ops, input_shape):
                                             "flops[{}]".format(layer.compute_flops()),
                                             "receptive_f[{}]".format(receptive_field)))
 
-        total += layer.compute_flops()
-        #print("{} {} {}x{}x{} stride[{}] padding[{}]"
-        #      .format(op.name, op.type, kernel_size, kernel_size, kernel_depth, strides[1], op.get_attr('padding')))
-    print("Total GFLOPs for CONV layers : {0:.2f} ".format(total / 1000000000))
+        total_flops += layer.compute_flops()
+        total_params += layer.compute_params()
+
+    print()
+    print("Total GFLOPs for CONV layers : {0:.2f} ".format(total_flops / 1000000000))
+    print("Total params for CONV layers : {} ".format(total_params))
+
 
 def main():
     # TODO: add check that we are working with the right batch ordering (GPU format)
@@ -182,10 +189,8 @@ def main():
 
         process_ops(target_ops, input_shape)
 
-
         # sess.run(tf.global_variables_initializer())
         # output = sess.run(logits)
-
 
 
 if __name__ == "__main__":
