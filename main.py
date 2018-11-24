@@ -2,6 +2,10 @@ import tensorflow as tf
 import vgg
 import math
 
+import functools
+import operator
+
+import term_plot
 
 class LayerBase():
     def __init__(self, prev_h, prev_w, prev_d, filter_h, filter_w, filter_d, filter_stride, padding):
@@ -138,6 +142,9 @@ def process_ops(target_ops, input_shape):
     receptive_field = 1
     stride_k = 1
 
+
+    layer_stat = []
+
     for op in target_ops:
 
         layer = create_layer_obj(op, prev_layer_shape)
@@ -150,18 +157,34 @@ def process_ops(target_ops, input_shape):
         if not check_shape_againt_groundtruth(op, prev_layer_shape):
             print("issues with dimension computation for operation {}".format(op.name))
 
+        flops = layer.compute_flops()
+        params = layer.compute_params()
+        feats_volume = functools.reduce(operator.mul, layer.compute_feature_shape())
+        layer_stat.append((op.name, flops, params, feats_volume))
+
         print("{:35} {:26} {:20} {:20} {:20}".format(op.name,
                                             "shape[{}]".format(prev_layer_shape),
-                                            "params[{}]".format(layer.compute_params()),
-                                            "flops[{}]".format(layer.compute_flops()),
+                                            "params[{}]".format(params),
+                                            "flops[{}]".format(flops),
                                             "receptive_f[{}]".format(receptive_field)))
 
-        total_flops += layer.compute_flops()
-        total_params += layer.compute_params()
+        total_flops += flops
+        total_params += params
+
+    print()
+
+    charts =  \
+        [term_plot.BarChart([a[1] for a in layer_stat], header = [a[0] for a in layer_stat], name = "Computation (layer flops) distribution"),
+        term_plot.BarChart([a[2] for a in layer_stat], header=[a[0] for a in layer_stat], name="Params (layer weights) distribution"),
+        term_plot.BarChart([a[3] for a in layer_stat], header = [a[0] for a in layer_stat], name = "Information (layer feature volume) distribution")]
+
+    for chart in charts:
+        print(chart.plot() + '\n')
 
     print()
     print("Total GFLOPs for CONV layers : {0:.2f} ".format(total_flops / 1000000000))
     print("Total params for CONV layers : {} ".format(total_params))
+
 
 
 def main():
@@ -170,8 +193,6 @@ def main():
     # TODO: process pool flops
     # TODO: process activations layers altough they will have a minor effect
     # TODO: add comparison of computed flops/params with number extracted directly from TF graph
-    # TODO: visualise the distribution of the params/computations over the net
-
 
     with tf.Session() as sess:
 
