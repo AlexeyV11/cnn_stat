@@ -14,8 +14,6 @@ Things to improve:
 - check if every graph op we analyze have only 1 input and output or impliment handling of more complex cases like resnet
 - process pool flops
 - process activations layers altough they will have a minor effect
-- add comparison of computed flops/params with number extracted directly from TF graph
-- visualise the distribution of the params/computations over the net
 
-example output for VGG16 - https://pastebin.com/raw/5jLCCf8r
+example output for VGG16 - https://pastebin.com/Vje0yQt8
 
