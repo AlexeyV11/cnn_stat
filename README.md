@@ -15,5 +15,5 @@ Things to improve:
 - process pool flops
 - process activations layers altough they will have a minor effect
 
-example output for VGG16 - https://pastebin.com/Vje0yQt8
+example output for VGG16 - https://pastebin.com/raw/Vje0yQt8
 
