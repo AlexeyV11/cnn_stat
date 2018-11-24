@@ -8,8 +8,12 @@ class BarChart:
     char_top_cross = "╤"  # cross
     char_cross = "┼"
     char_bottom_cross = "╧"
-    char_horizontal = "═"
+    char_horizontal_double = "═"
+    char_horizontal_single = "─"
     char_vetrtical = "│"
+
+    char_cross_left = "├"
+    char_cross_right = "┤"
 
     def __init__(self, values, header=None, name=None, width_bar=80):
         self._values = values
@@ -26,18 +30,21 @@ class BarChart:
             b = BarChart.char_tl
             m = BarChart.char_top_cross
             e = BarChart.char_tr
+            hor = BarChart.char_horizontal_double
         elif last:
             b = BarChart.char_bl
             m = BarChart.char_bottom_cross
             e = BarChart.char_br
+            hor = BarChart.char_horizontal_double
         else:
-            b = BarChart.char_vetrtical
+            b = BarChart.char_cross_left
             m = BarChart.char_cross
-            e = BarChart.char_vetrtical
+            e = BarChart.char_cross_right
+            hor = BarChart.char_horizontal_single
 
         line = b
         for i in range(len(arr_width)):
-            line += BarChart.char_horizontal * arr_width[i] + (m if i != len(arr_width) - 1 else e)
+            line += hor * arr_width[i] + (m if i != len(arr_width) - 1 else e)
 
         return line + "\n"
 
