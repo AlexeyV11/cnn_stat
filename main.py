@@ -171,6 +171,7 @@ def process_ops(target_ops, input_shape):
         total_flops += flops
         total_params += params
 
+
     print()
 
     charts =  \
@@ -179,12 +180,35 @@ def process_ops(target_ops, input_shape):
         term_plot.BarChart([a[3] for a in layer_stat], header = [a[0] for a in layer_stat], name = "Information (layer feature volume) distribution")]
 
     for chart in charts:
-        print(chart.plot() + '\n')
+        print(chart.plot())
 
     print()
     print("Total GFLOPs for CONV layers : {0:.2f} ".format(total_flops / 1000000000))
     print("Total params for CONV layers : {} ".format(total_params))
 
+def process_tf_flops():
+    # supress output
+    opts = (tf.profiler.ProfileOptionBuilder(
+        tf.profiler.ProfileOptionBuilder.float_operation())
+            .with_empty_output()
+            .build())
+
+    # show default output with useful info
+    # opts = tf.profiler.ProfileOptionBuilder.float_operation()
+
+    flops = tf.profiler.profile(tf.get_default_graph(), run_meta=tf.RunMetadata(), cmd='op', options=opts)
+
+    if flops is not None:
+        # NOTE: division by two of the result
+        # we divide by two because we consider add and mult as one operation in our calculations!
+        print("Total GFLOPs from TF graph : {0:.2f} ".format(flops.total_float_ops / 1000000000 / 2))
+
+def process_tf_variables():
+    total_parameters = 0
+    for variable in tf.trainable_variables():
+        total_parameters += functools.reduce(operator.mul, variable.get_shape().as_list())
+
+    print("Total params from TF graph : {} ".format(total_parameters))
 
 
 def main():
@@ -192,7 +216,8 @@ def main():
     # TODO: check if every graph op we analyze have only 1 input and output or impliment handling of more complex cases like resnet
     # TODO: process pool flops
     # TODO: process activations layers altough they will have a minor effect
-    # TODO: add comparison of computed flops/params with number extracted directly from TF graph
+
+    #tf.logging.set_verbosity(tf.logging.ERROR)
 
     with tf.Session() as sess:
 
@@ -209,6 +234,11 @@ def main():
                       if op.type == 'Conv2D' or op.type == "MaxPool"]
 
         process_ops(target_ops, input_shape)
+
+
+        process_tf_flops()
+
+        process_tf_variables()
 
         # sess.run(tf.global_variables_initializer())
         # output = sess.run(logits)
